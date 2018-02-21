@@ -1,0 +1,72 @@
+Case 1:
+	- C1 does a put("a", 1) and aborts
+	- C1 starts a new transaction and does a put("a", 1) and commits. 
+
+Case 2:
+	- C1 does a put("a", 1) and sleeps
+	- C2 does a put("a", 2) and commits
+	- Nodes should abort C1
+
+
+
+
+Test case:
+1 client - 1 node
+=================================================================================
+1to1
+clientCommit1:
+client start new tx, commit, node should have the tx there
+
+clientCommit2:
+Client start new tx1, commit, then another tx2, commit. Node should have the both tx there
+
+clientAbort1: 
+client start new tx, abort, node should NOT have the tx there
+
+clientAbort2:
+Client start new tx1, abort, then another tx2, commit. Node should only have tx2
+
+clientConflictCommit:
+Client start tx1, commit, then start tx2 has k1 conflict with tx1, commit. Node should have both tx and k1 value is overwritten by tx2
+
+
+
+2 client - 1 node
+=================================================================================
+2to1NoConflict:
+Client 1 start tx1, commit, client 2 start tx2 at the same time, commit. Node should have both records
+
+
+2to1ConflictCommit:
+Client 1 start tx1, commit, client 2 start tx2 at the same time with k1 conflict with tx1, commit. Node should abort tx2 when tx1 commits earlier.
+***	line 64 (approx)
+*** delay 5 sec for testing tx2 not yet gets into the queue
+*** delay 1 sec for testing tx2 already append to the queue 
+
+
+
+N client - 1 node
+=================================================================================
+3to1ConflictCommit1:
+(SAME TIME) client 1 start tx1 (k1) commit; client 2 start tx2 (k1, k2) commit; client 3 start tx3 (no conflict with tx1 or tx2) commit. Commit order: tx1, tx2, tx3. Node should have tx1 and tx3, abort tx2.
+
+3to1ConflictCommit2:  ***//TODO
+(SAME TIME) client 1 start tx1 (k1) commit; client 2 start tx2 (k1, k2) commit; client 3 start tx3 (k2, k3) commit. Commit order: tx1, tx2, tx3. Node should have tx1 and tx3, abort tx2.
+
+**** not quite sure if that's what should happen but currently our code does run like this?
+
+3to1ConflictCommit3:
+(SAME TIME) client 1 start tx1 (k1) commit; client 2 start tx2 (k1, k2) commit; client 3 start tx3 (k1, k3) commit. Commit order: tx1, tx2, tx3. Node should have tx1, abort tx2 and tx3.
+
+
+
+1 client - 2 node
+=================================================================================
+No conflict:
+Commit:
+Client start tx1, commit. One of node1 or node2 must finish tx1 block computation first, let’s say node1 -> node2 should add tx1 block to chain when receive message from node1, stop its computation for 
+1. tx1 block if it’s still computing 
+OR 
+2. when client reply “U R Not first” 
+wait for message from node 1 if not yet received, start no-op block computation. Node 1 start no-op block computation after receive OK message from node2 for adding new block.
+
